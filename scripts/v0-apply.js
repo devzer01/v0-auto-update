@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const BASE_URL = 'https://api.v0.dev';
+const REQUEST_TIMEOUT_MS = parseInt(process.env.V0_TIMEOUT_MS || '600000', 10); // 10 minutes
 
 async function request(method, path, body = null) {
   const apiKey = process.env.V0_API_KEY;
@@ -23,16 +24,25 @@ async function request(method, path, body = null) {
     process.exit(1);
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   const opts = {
     method,
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
+    signal: controller.signal,
   };
   if (body) opts.body = JSON.stringify(body);
 
-  const res = await fetch(`${BASE_URL}${path}`, opts);
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, opts);
+  } finally {
+    clearTimeout(timeout);
+  }
   const data = await res.json();
 
   if (!res.ok) {
