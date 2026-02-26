@@ -1,0 +1,31 @@
+# Next.js app (not part of the CLI)
+app/
+components/
+public/
+.next/
+
+# Config files for the web app
+next.config.*
+next-env.d.ts
+tsconfig.json
+tailwind.config.*
+postcss.config.*
+components.json
+
+# GitHub workflows & templates
+.github/
+
+# Dev/build artifacts
+node_modules/
+*.tgz
+
+# Environment & secrets
+.env
+.env.*
+
+# Prompt file (user-specific)
+v0.md
+
+# Misc
+.DS_Store
+*.log

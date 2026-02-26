@@ -1,0 +1,33 @@
+{
+  "name": "v0-update",
+  "version": "1.0.0",
+  "description": "CLI for the v0.dev Platform and Model APIs — manage projects, chats, deployments, and automate PR workflows",
+  "type": "module",
+  "bin": {
+    "v0": "./bin/v0.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/"
+  ],
+  "scripts": {
+    "test": "node bin/v0.js --help"
+  },
+  "keywords": [
+    "v0",
+    "v0-dev",
+    "vercel",
+    "cli",
+    "code-generation",
+    "ai"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0"
+  }
+}

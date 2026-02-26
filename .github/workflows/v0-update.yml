@@ -1,0 +1,55 @@
+name: v0 Update
+
+on:
+  push:
+    paths:
+      - 'v0.md'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  v0-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Send prompt to v0 and apply files
+        id: v0
+        env:
+          V0_API_KEY: ${{ secrets.V0_API_KEY }}
+          V0_PROJECT_ID: ${{ vars.V0_PROJECT_ID }}
+        run: node scripts/v0-apply.js
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="v0/update-$(date +%s)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "v0: apply changes from v0.md"
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --title "v0: $(head -n 1 v0.md | sed 's/^#\s*//' | cut -c1-72)" \
+            --body "${{ steps.v0.outputs.pr_body }}" \
+            --base "${{ github.ref_name }}"
+
+          gh pr merge --squash --delete-branch --auto
