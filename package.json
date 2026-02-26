@@ -4,7 +4,8 @@
   "description": "CLI for the v0.dev Platform and Model APIs — manage projects, chats, deployments, and automate PR workflows",
   "type": "module",
   "bin": {
-    "v0": "./bin/v0.js"
+    "v0": "./bin/v0.js",
+    "v0-apply": "./scripts/v0-apply.js"
   },
   "files": [
     "bin/",
