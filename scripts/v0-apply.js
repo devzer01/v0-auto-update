@@ -7,8 +7,9 @@
  * Usage: node scripts/v0-apply.js
  *
  * Env vars:
- *   V0_API_KEY   - v0 API key (required)
- *   V0_PROJECT_ID - v0 project ID (optional, uses first project if not set)
+ *   V0_API_KEY    - v0 API key (required)
+ *   V0_PROJECT_ID  - v0 project ID (optional, uses first project if not set)
+ *   V0_REPO_URL    - GitHub repo URL (optional, uses repo-based chat if set)
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -61,28 +62,37 @@ async function main() {
   }
   console.log(`Prompt (${prompt.length} chars):\n${prompt.slice(0, 200)}${prompt.length > 200 ? '...' : ''}\n`);
 
-  // 2. Resolve project ID
+  // 2. Build chat request body
+  const repoUrl = process.env.V0_REPO_URL;
   let projectId = process.env.V0_PROJECT_ID;
-  if (!projectId) {
-    console.log('No V0_PROJECT_ID set, fetching first project...');
-    const projects = await request('GET', '/v1/projects');
-    const list = Array.isArray(projects) ? projects : projects.projects || projects.data || [];
-    if (list.length === 0) {
-      console.log('No existing project, creating one...');
-      const p = await request('POST', '/v1/projects', { name: 'v0-auto' });
-      projectId = p.id;
-    } else {
-      projectId = list[0].id;
+  let chatBody;
+
+  if (repoUrl) {
+    // Repo-based: v0 pulls context from the GitHub repo directly
+    console.log(`Using repo: ${repoUrl}`);
+    chatBody = { type: 'repo', repo: { url: repoUrl }, message: prompt };
+    if (projectId) chatBody.projectId = projectId;
+  } else {
+    // Project-based fallback
+    if (!projectId) {
+      console.log('No V0_PROJECT_ID or V0_REPO_URL set, fetching first project...');
+      const projects = await request('GET', '/v1/projects');
+      const list = Array.isArray(projects) ? projects : projects.projects || projects.data || [];
+      if (list.length === 0) {
+        console.log('No existing project, creating one...');
+        const p = await request('POST', '/v1/projects', { name: 'v0-auto' });
+        projectId = p.id;
+      } else {
+        projectId = list[0].id;
+      }
     }
+    console.log(`Project ID: ${projectId}`);
+    chatBody = { message: prompt, projectId };
   }
-  console.log(`Project ID: ${projectId}`);
 
   // 3. Create chat with the prompt
   console.log('Sending prompt to v0...');
-  const chat = await request('POST', '/v1/chats', {
-    message: prompt,
-    projectId,
-  });
+  const chat = await request('POST', '/v1/chats', chatBody);
 
   console.log(`Chat ID: ${chat.id}`);
   if (chat.demo) console.log(`Demo: ${chat.demo}`);
